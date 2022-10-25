@@ -1,3 +1,5 @@
+#pragma once
+
 template<typename UnderlingType, typename Tag>
 class StrongType
 {
