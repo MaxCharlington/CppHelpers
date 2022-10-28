@@ -24,6 +24,11 @@ struct StringLiteral {
         std::copy_n(str.data(), N, value);
     }
 
+    constexpr bool operator==(std::string_view str) const
+    {
+        return str == value;
+    }
+
     constexpr const char* c_str() const noexcept
     {
         return value;
