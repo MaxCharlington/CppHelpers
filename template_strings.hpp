@@ -29,6 +29,11 @@ struct StringLiteral {
         return str == value;
     }
 
+    constexpr bool operator==(const StringLiteral& str) const
+    {
+        return str == std::string_view{value};
+    }
+
     constexpr const char* c_str() const noexcept
     {
         return value;
@@ -36,3 +41,28 @@ struct StringLiteral {
 
     char value[N];
 };
+
+
+template<size_t Hash>
+struct HashedStrImpl {
+    constexpr static size_t m_hash{Hash};
+
+    template <size_t H>
+    constexpr bool operator==(const HashedStrImpl<H>& str) const
+    {
+        return m_hash == str.hash();
+    }
+
+    constexpr size_t hash() const noexcept
+    {
+        return m_hash;
+    }
+};
+
+constexpr size_t hash(std::string_view str) noexcept
+{   
+    return str.length(); // replace real hash impl
+}
+
+template<StringLiteral s>
+using HashedStr = HashedStrImpl<hash(s.value)>;
