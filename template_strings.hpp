@@ -24,14 +24,19 @@ struct StringLiteral {
         std::copy_n(str.data(), N, value);
     }
 
-    constexpr bool operator==(std::string_view str) const
+    constexpr bool operator==(std::string_view str) const noexcept
     {
         return str == value;
     }
 
-    constexpr bool operator==(const StringLiteral& str) const
+    constexpr bool operator==(const StringLiteral& str) const noexcept
     {
         return str == std::string_view{value};
+    }
+
+    constexpr operator std::string_view() const noexcept
+    {
+        return value;
     }
 
     constexpr const char* c_str() const noexcept
@@ -39,12 +44,12 @@ struct StringLiteral {
         return value;
     }
 
-    constexpr auto size() const -> std::size_t
+    constexpr auto size() const noexcept -> std::size_t
     {
         return N;
     }
 
-    constexpr auto length() const -> std::size_t
+    constexpr auto length() const noexcept -> std::size_t
     {
         return N;
     }
@@ -52,42 +57,22 @@ struct StringLiteral {
     char value[N];
 };
 
-
-template<size_t Hash>
-struct HashedStrImpl {
-    constexpr static size_t m_hash{Hash};
-
-    template <size_t H>
-    constexpr bool operator==(const HashedStrImpl<H>& str) const
-    {
-        return m_hash == str.hash();
-    }
-
-    constexpr size_t hash() const noexcept
-    {
-        return m_hash;
-    }
-};
-
 constexpr size_t hash(std::string_view str) noexcept
 {   
     return str.length(); // replace real hash impl
 }
-
-template<StringLiteral s>
-using HashedStr = HashedStrImpl<hash(s.value)>;
 
 template<StringLiteral Str, size_t Hash>
 struct StringImpl
 {
     constexpr auto get() const -> std::string_view
     {
-        return Str.value;
+        return Str;
     }
 
     constexpr auto c_str() const -> const char*
     {
-        return Str.value;
+        return Str.c_str();
     }
 
     constexpr auto size() const -> std::size_t
@@ -104,6 +89,11 @@ struct StringImpl
     constexpr bool operator==(const StringImpl<S, H>&) const
     {
         return Hash == H and Str == StringImpl<S, H>::str;
+    }
+
+    constexpr operator std::string_view() const noexcept
+    {
+        return Str;
     }
 };
 
