@@ -76,3 +76,36 @@ constexpr size_t hash(std::string_view str) noexcept
 
 template<StringLiteral s>
 using HashedStr = HashedStrImpl<hash(s.value)>;
+
+template<StringLiteral Str, size_t Hash>
+struct StringImpl
+{
+    constexpr auto get() const -> std::string_view
+    {
+        return Str.value;
+    }
+
+    constexpr auto c_str() const -> const char*
+    {
+        return Str.value;
+    }
+
+    constexpr auto size() const -> std::size_t
+    {
+        return Str.size();
+    }
+
+    constexpr auto length() const -> std::size_t
+    {
+        return Str.length();
+    }
+
+    template<StringLiteral S, size_t H>
+    constexpr bool operator==(const StringImpl<S, H>&) const
+    {
+        return Hash == H and Str == StringImpl<S, H>::str;
+    }
+};
+
+template<StringLiteral S>
+using String = StringImpl<S, hash(S.value)>;
