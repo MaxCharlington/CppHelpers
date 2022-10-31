@@ -10,8 +10,6 @@
  */
 template<std::size_t N>
 struct StringLiteral {
-    constexpr static std::size_t size{N};
-    
     constexpr StringLiteral(const char (&str)[N]) noexcept
     {
         std::copy_n(str, N, value);
@@ -39,6 +37,16 @@ struct StringLiteral {
     constexpr const char* c_str() const noexcept
     {
         return value;
+    }
+
+    constexpr auto size() const -> std::size_t
+    {
+        return N;
+    }
+
+    constexpr auto length() const -> std::size_t
+    {
+        return N;
     }
 
     char value[N];
