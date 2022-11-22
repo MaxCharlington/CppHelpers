@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <queue>
+#include <optional>
 
 template <typename T>
 class ConcurrentQueue {
@@ -19,7 +20,7 @@ public:
         m_q.push(el);
     }
 
-    T pop() {
+    std::optional<T> pop() {
         std::lock_guard lk{m_mtx};
         if (m_q.size() > 0) {
             auto ret = m_q.front();
@@ -27,7 +28,7 @@ public:
             return ret;
         }
         else {
-            return T{};
+            return {};
         }
     }
 };
