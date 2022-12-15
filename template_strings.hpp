@@ -15,7 +15,9 @@ struct StringLiteral {
         std::copy_n(str, N, value);
     }
 
-    constexpr explicit StringLiteral(std::string_view str) noexcept 
+    constexpr StringLiteral(const StringLiteral&) noexcept = default;
+
+    constexpr explicit StringLiteral(std::string_view str) noexcept
     {
         if (std::is_constant_evaluated())
         {
@@ -58,14 +60,14 @@ struct StringLiteral {
 };
 
 constexpr size_t hash(std::string_view str) noexcept
-{   
+{
     return str.length(); // replace real hash impl
 }
 
 template<StringLiteral Str, size_t Hash>
 struct StringImpl
 {
-    constexpr auto get() const -> std::string_view
+    constexpr auto get() const
     {
         return Str;
     }
