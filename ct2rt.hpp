@@ -7,42 +7,10 @@
 #include <type_traits>
 #include <tuple>
 
-/* Example:
-struct S
-{
-    int a;
-    std::string b;
-
-    constexpr S(int a, const std::string& b) : a{a}, b{b} {}
-
-
-    // Special methods to support compiletime to runtime transfer
-    template<std::array<std::size_t, 1> Sizes>
-    constexpr auto serialize() const
-    {
-        std::array<char, Sizes[0] + 1> b_repr;
-        std::copy_n(b.c_str(), Sizes[0] + 1, b_repr.data());
-        return std::make_tuple(a, b_repr);
-    }
-
-    constexpr auto sizes() const -> std::array<std::size_t, 1>
-    {
-        return { b.size() };
-    }
-
-    S(const auto& repr) : a{std::get<0>(repr)}, b{std::get<1>(repr).data()} {}
-};
-
-static constexpr auto create()
-{
-    S s{1, "Hello"};
-    s.b += ", world!";
-    // compiletime calculations...
-    return [=]{
-        return s;
-    };
+/* Usage:
+int main() {
+    S s{to_runtime<create>()};
 }
-
 */
 
 namespace detail
@@ -58,29 +26,42 @@ namespace detail
 
 }  // namespace detail
 
-template<std::invocable auto Getter>
+template<std::invocable auto Get>
 static consteval auto to_runtime()
 {
-    static_assert(requires{ {Getter()} -> std::invocable; },
-        "template parameter 'Getter' should be callable returning callable without parameters");
-    static_assert(requires{ {Getter()()} -> detail::CCompound; },
-        "template parameter 'Getter' should be callable returning callable returning object of compound type");
-    static_assert(requires{ detail::UsableInTemplate<Getter()().sizes()>; },
-        "object returned from 'sizes' method should be usable as template parameter");
-    static_assert(requires{ {Getter()().template serialize<Getter()().sizes()>()} -> detail::CTriviallyCopyConstructible; },
-        "'serialize' should return value capable to copy from compiletime to runtime");
-    static_assert(std::is_constructible_v<decltype(Getter()()), decltype(Getter()().template serialize<Getter()().sizes()>())>,
-        "'serialize' should return value that is capable to create object from");
+    static_assert(requires{ {Get()} -> std::invocable; },
+        "template parameter 'Get' should be callable returning callable without parameters");
+    static_assert(requires{
+            {Get()()} -> detail::CCompound;
+        }, "template parameter 'Get' should be callable returning callable returning object of compound type");
+    static_assert(requires{
+            {Get()().sizes_count()} -> std::same_as<std::size_t>;
+        }, "'sizes_count' method should return std::size_t representing count of sizes");
+    static_assert(requires{
+            detail::UsableInTemplate<
+                Get()().template sizes<
+                    Get()().sizes_count()
+                >()
+            >; }, "object returned from 'sizes' method should be usable as template parameter");
+    static_assert(requires{
+            {Get()().template serialize<
+                Get()().template sizes<
+                    Get()().sizes_count()
+                >()
+            >()} -> detail::CTriviallyCopyConstructible;
+        }, "'serialize' should return value capable to copy from compiletime to runtime");
+    static_assert(std::is_constructible_v<
+            decltype(Get()()),
+            decltype(Get()().template serialize<
+                Get()().template sizes<
+                    Get()().sizes_count()
+                >()
+            >()
+        )>, "'serialize' should return value that is capable to create object from");
 
-    constexpr auto sizes = Getter()().sizes();
-    return Getter()().template serialize<sizes>();
+    constexpr std::size_t sizes_count = Get()().sizes_count();
+    constexpr auto sizes = Get()().template sizes<sizes_count>();
+    return Get()().template serialize<sizes>();
 }
-
-
-/* Usage:
-int main() {
-    S s{to_runtime<create>()};
-}
-*/
 
 #endif  // CT2RT_HPP
